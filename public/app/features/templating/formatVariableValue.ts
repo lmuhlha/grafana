@@ -5,7 +5,7 @@ import { isAdHoc } from '../variables/guard';
 
 import { getVariableWrapper } from './LegacyVariableWrapper';
 
-export function formatVariableValue(value: any, format?: any, variable?: any, text?: string): string {
+export function formatVariableValue(value: any, format?: any, variable?: any, text?: string, options?: any): string {
   // for some scopedVars there is no variable
   variable = variable || {};
 
@@ -47,5 +47,8 @@ export function formatVariableValue(value: any, format?: any, variable?: any, te
   }
 
   const formatVariable = getVariableWrapper(variable, value, text ?? value);
+  if (options) {
+    return formatItem.formatter(value, args, formatVariable, options);
+  }
   return formatItem.formatter(value, args, formatVariable);
 }

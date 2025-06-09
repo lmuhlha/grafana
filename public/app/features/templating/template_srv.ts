@@ -52,15 +52,17 @@ export class TemplateSrv implements BaseTemplateSrv {
   private index: any = {};
   private grafanaVariables = new Map<string, any>();
   private timeRange?: TimeRange | null = null;
+  private timeZone?: string;
   private _adhocFiltersDeprecationWarningLogged = new Map<string, boolean>();
 
   constructor(private dependencies: TemplateSrvDependencies = runtimeDependencies) {
     this._variables = [];
   }
 
-  init(variables: any, timeRange?: TimeRange) {
+  init(variables: any, timeRange?: TimeRange, timeZone?: string) {
     this._variables = variables;
     this.timeRange = timeRange;
+    this.timeZone = timeZone;
     this.updateIndex();
   }
 
@@ -101,16 +103,21 @@ export class TemplateSrv implements BaseTemplateSrv {
         ...this.index,
         ['__from']: {
           current: { value: from, text: from },
+          timeZone: this.timeZone,
         },
         ['__to']: {
           current: { value: to, text: to },
+          timeZone: this.timeZone,
         },
       };
     }
   }
 
-  updateTimeRange(timeRange: TimeRange) {
+  updateTimeRange(timeRange: TimeRange, timeZone?: string) {
     this.timeRange = timeRange;
+    if (timeZone !== undefined) {
+      this.timeZone = timeZone;
+    }
     this.updateIndex();
   }
 
@@ -343,6 +350,17 @@ export class TemplateSrv implements BaseTemplateSrv {
         return formatVariableValue(fieldValue, format, variable, text);
       }
     }
+
+    // --- Timezone fix for __from/__to:date:... ---
+    if ((variableName === '__from' || variableName === '__to') && format && format.startsWith('date')) {
+      // If dashboard timezone is UTC, force UTC formatting
+      if (this.timeZone === 'utc') {
+        return formatVariableValue(value, format, variable, text, { timeZone: 'utc' });
+      }
+      // Otherwise, default (browser/local)
+      return formatVariableValue(value, format, variable, text);
+    }
+    // --- End timezone fix ---
 
     return formatVariableValue(value, format, variable, text);
   }

@@ -697,10 +697,10 @@ const areOuputEdgesNotTimeRange = (node: Node, variables: TypedVariableModel[]) 
  * Create a graph based on all template variables.
  * Loop through all the variables and perform the following checks for each variable:
  *
- * -- a) If a variable A is a query variable, it’s time range, and has no dependent nodes
+ * -- a) If a variable A is a query variable, it's time range, and has no dependent nodes
  * ----- it should be added to the variablesRefreshTimeRange.
  *
- * -- b) If a variable A is a query variable, it’s time range, and has dependent nodes (B, C)
+ * -- b) If a variable A is a query variable, it's time range, and has dependent nodes (B, C)
  * ----- 1. add the variable A to variablesRefreshTimeRange
  * ----- 2. skip all the dependent nodes (B, C).
  *       Here, we should traverse the tree using DFS (Depth First Search), as the dependent nodes will be updated in cascade when the parent variable is updated.
@@ -780,7 +780,9 @@ export const onTimeRangeUpdated =
     dependencies: OnTimeRangeUpdatedDependencies = { templateSrv: getTemplateSrv(), events: appEvents }
   ): ThunkResult<Promise<void>> =>
   async (dispatch, getState) => {
-    dependencies.templateSrv.updateTimeRange(timeRange);
+    const dashboard = getState().dashboard.getModel();
+    const timezone = dashboard?.getTimezone();
+    dependencies.templateSrv.updateTimeRange(timeRange, timezone);
 
     // approach # 2, get variables that need refresh but use the dependency graph to only update the ones that are affected
     // TODO: remove the VariableWithOptions type once the feature flag is on GA

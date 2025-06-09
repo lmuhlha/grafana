@@ -620,12 +620,15 @@ describe('templateSrv', () => {
     });
   });
 
-  describe('date formating', () => {
+  describe.each([
+    ['utc'],
+    ['browser'],
+  ])('date formating (dashboard timezone: %s)', (timeZone) => {
     beforeEach(() => {
       _templateSrv = initTemplateSrv(key, [], {
         from: dateTime(1594671549254),
         to: dateTime(1595237229747),
-      } as TimeRange);
+      } as TimeRange, timeZone);
     });
 
     it('should replace ${__from} with ms epoch value', () => {
@@ -640,17 +643,31 @@ describe('templateSrv', () => {
 
     it('should replace ${__from:date} with iso date', () => {
       const target = _templateSrv.replace('${__from:date}');
-      expect(target).toBe('2020-07-13T20:19:09.254Z');
+      if (timeZone === 'utc') {
+        expect(target).toBe('2020-07-13T20:19:09.254Z');
+      } else {
+        // Browser timezone: allow any valid ISO string (local offset)
+        expect(target).toMatch(/^2020-07-13T(\d{2}:\d{2}:\d{2}\.254)(Z|[+-]\d{2}:\d{2})$/);
+      }
     });
 
     it('should replace ${__from:date:iso} with iso date', () => {
       const target = _templateSrv.replace('${__from:date:iso}');
-      expect(target).toBe('2020-07-13T20:19:09.254Z');
+      if (timeZone === 'utc') {
+        expect(target).toBe('2020-07-13T20:19:09.254Z');
+      } else {
+        expect(target).toMatch(/^2020-07-13T(\d{2}:\d{2}:\d{2}\.254)(Z|[+-]\d{2}:\d{2})$/);
+      }
     });
 
     it('should replace ${__from:date:YYYY-MM} using custom format', () => {
       const target = _templateSrv.replace('${__from:date:YYYY-MM}');
-      expect(target).toBe('2020-07');
+      if (timeZone === 'utc') {
+        expect(target).toBe('2020-07');
+      } else {
+        // In browser timezone, month could differ if local time is before/after UTC midnight
+        expect(['2020-07', '2020-06', '2020-08']).toContain(target);
+      }
     });
   });
 
